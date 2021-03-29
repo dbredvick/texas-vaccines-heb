@@ -1,4 +1,4 @@
-module.exports = (url, locations) => {
+module.exports = (url, lastTime) => {
   return {
     blocks: [
       {
@@ -12,7 +12,7 @@ module.exports = (url, locations) => {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: 'Click here to schedule (direct links below):',
+          text: 'Click here to schedule:',
         },
         accessory: {
           type: 'button',
@@ -27,11 +27,11 @@ module.exports = (url, locations) => {
         },
       },
       {
-        type: 'divider',
-      },
-      {
         type: 'section',
-        fields: locations,
+        text: {
+          type: 'mrkdwn',
+          text: `There are ${lastTime} appointments available over the next 30 days.`,
+        },
       },
     ],
   };

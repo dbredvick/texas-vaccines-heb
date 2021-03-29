@@ -1,4 +1,7 @@
-# texas-vaccines
+# Texas Vaccine Updates
+
+
+If you would like to contribute a crawler just follow the folder structure and add your file to `crawlers/`
 
 ### Install
 ```bash
@@ -10,46 +13,23 @@ npm install
 npm start
 ```
 
-# HEB 
-
-To consume HEBs COVID vaccine API send a `GET` request to:
+### Test
 ```bash
-https://heb-ecom-covid-vaccine.hebdigital-prd.com/vaccine_locations.json
+npm test
 ```
 
-Example response snippet:
-
-```json
-{
-  "locations": [
-    {
-      "zip": "77055-6209",
-      "url": null,
-      "type": "store",
-      "street": "9710 KATY FREEWAY",
-      "storeNumber": 109,
-      "state": "TX",
-      "openTimeslots": 0,
-      "openAppointmentSlots": 0,
-      "name": "Bunker Hill H-E-B",
-      "longitude": -95.53206,
-      "latitude": 29.78485,
-      "city": "HOUSTON"
-    },
-    {
-      "zip": "77459-6931",
-      "url": null,
-      "type": "store",
-      "street": "8900 HWY 6",
-      "storeNumber": 110,
-      "state": "TX",
-      "openTimeslots": 0,
-      "openAppointmentSlots": 0,
-      "name": "Sienna Market H-E-B",
-      "longitude": -95.53497,
-      "latitude": 29.53928,
-      "city": "MISSOURI CITY"
-    },
-  ],
-}
+Here is a `.env` file that will get you up and running. Just save it as `.env` in this project.
 ```
+NODE_ENV=development
+PORT=666
+KEEP_ALIVE_URL=https://texas-vaccines.herokuapp.com/alive
+SLACK_WEBHOOK_URL=https://hooks.slack.com/services/BLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH
+HEB_WEBHOOK_URL=https://hooks.slack.com/services/BLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH
+ALBERTSONS_WEBHOOK_URL=https://hooks.slack.com/services/BLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH
+ALAMO_WEBHOOK_URL=https://hooks.slack.com/services/BLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH
+BELL_WEBHOOK_URL=https://hooks.slack.com/services/BLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH
+UNIVERSITY_WEBHOOK_URL=https://hooks.slack.com/services/BLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH
+FALLSHOSPITAL_WEBHOOK_URL=https://hooks.slack.com/services/BLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH
+CORYELL_WEBHOOK_URL=https://hooks.slack.com/services/BLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAHBLAH
+```
+Join the `#__test_channel__` in Slack to get working webhook URLs.

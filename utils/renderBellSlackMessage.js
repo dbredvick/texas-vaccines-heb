@@ -1,18 +1,18 @@
-module.exports = (url, locations) => {
+module.exports = (url, location) => {
   return {
     blocks: [
       {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: '*Vaccines are available! 💉 @channel*',
+          text: `*Vaccines are available in ${location} 💉 @channel*`,
         },
       },
       {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: 'Click here to schedule (direct links below):',
+          text: 'Click here to schedule:',
         },
         accessory: {
           type: 'button',
@@ -25,13 +25,6 @@ module.exports = (url, locations) => {
           url,
           action_id: 'button-action',
         },
-      },
-      {
-        type: 'divider',
-      },
-      {
-        type: 'section',
-        fields: locations,
       },
     ],
   };

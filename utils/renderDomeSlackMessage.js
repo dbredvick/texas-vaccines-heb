@@ -1,4 +1,4 @@
-module.exports = (url, locations) => {
+module.exports = (url) => {
   return {
     blocks: [
       {
@@ -12,7 +12,7 @@ module.exports = (url, locations) => {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: 'Click here to schedule (direct links below):',
+          text: 'Click here to schedule using code `DOMECOVID`:',
         },
         accessory: {
           type: 'button',
@@ -25,13 +25,6 @@ module.exports = (url, locations) => {
           url,
           action_id: 'button-action',
         },
-      },
-      {
-        type: 'divider',
-      },
-      {
-        type: 'section',
-        fields: locations,
       },
     ],
   };

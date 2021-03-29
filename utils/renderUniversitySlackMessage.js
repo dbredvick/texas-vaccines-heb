@@ -1,18 +1,25 @@
-module.exports = (url, locations) => {
+module.exports = (url, appointmentCountMessage) => {
   return {
     blocks: [
       {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: '*Vaccines are available! 💉 @channel*',
+          text: '*Vaccines are available! 🏃‍♂️ @channel*',
         },
       },
       {
         type: 'section',
         text: {
           type: 'mrkdwn',
-          text: 'Click here to schedule (direct links below):',
+          text: appointmentCountMessage,
+        },
+      },
+      {
+        type: 'section',
+        text: {
+          type: 'mrkdwn',
+          text: 'Click here to schedule:',
         },
         accessory: {
           type: 'button',
@@ -25,13 +32,6 @@ module.exports = (url, locations) => {
           url,
           action_id: 'button-action',
         },
-      },
-      {
-        type: 'divider',
-      },
-      {
-        type: 'section',
-        fields: locations,
       },
     ],
   };

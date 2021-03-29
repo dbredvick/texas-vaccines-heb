@@ -1,16 +1,31 @@
+require('dotenv').config();
 const fetch = require('node-fetch');
-const dotenv = require('dotenv');
 const {IncomingWebhook} = require('@slack/webhook');
 const renderSlackMessage = require('../utils/renderSlackMessage');
+const capitalizeSentance = require('../utils/capitalizeSentance');
 const hebURL = 'https://heb-ecom-covid-vaccine.hebdigital-prd.com/vaccine_locations.json';
 const scheduleURL = 'https://vaccine.heb.com/scheduler';
 
-dotenv.config();
+const webhookURL = process.env.HEB_WEBHOOK_URL;
+const webhook = new IncomingWebhook(webhookURL);
 
-const url = process.env.HEB_WEBHOOK_URL;
-const webhook = new IncomingWebhook(url);
+let lastRunSlotCount = [];
 
-const capitalizeFirstLetter = (string) => string.charAt(0).toUpperCase() + string.slice(1).toLowerCase();
+const excludedCities = [
+  'odessa',
+  'midland',
+  'mcallen',
+  'harlingen',
+  'falfurrias',
+  'mission',
+  'san angelo',
+  'mont belvieu',
+  'port arthur',
+];
+
+const slotThreshold = 4;
+
+const extractSlotDetails = (slotDetails) => slotDetails.map((deets) => deets.manufacturer).join(', ');
 
 const checkHeb = async () => {
   try {
@@ -18,45 +33,56 @@ const checkHeb = async () => {
     const response = await fetch(hebURL);
     const vaccineLocations = await response.json();
 
-    if (response.status === 200) {
-      const locationsWithVaccine = {};
+    if (lastRunSlotCount.length === 0) {
+      lastRunSlotCount = vaccineLocations['locations'];
+    }
 
-      for (location in vaccineLocations.locations) {
-        if (vaccineLocations.locations.hasOwnProperty(location)) {
-          const {name, openTimeslots, city} = vaccineLocations.locations[location];
+    const locationsWithVaccine = {};
 
-          if (openTimeslots > 3) {
-            locationsWithVaccine[name] = {openTimeslots, city};
-          }
+    for (location in vaccineLocations.locations) {
+      if (vaccineLocations.locations.hasOwnProperty(location)) {
+        const {name, openTimeslots, openAppointmentSlots, city, street, url, slotDetails} = vaccineLocations.locations[location];
+        const manufacturers = extractSlotDetails(slotDetails);
+
+
+        if (openAppointmentSlots >= slotThreshold && !excludedCities.includes(city.toLowerCase())) {
+          locationsWithVaccine[name] = {name, openTimeslots, openAppointmentSlots, city, url, street, manufacturers};
         }
       }
+    }
 
-      if (Object.keys(locationsWithVaccine).length === 0) {
-        return;
-      }
+    if (Object.keys(locationsWithVaccine).length === 0) {
+      return;
+    }
 
-      const slackFields = [];
+    const slackFields = [];
 
-      for (location in locationsWithVaccine) {
-        if (locationsWithVaccine.hasOwnProperty(location)) {
-          const {openTimeslots, city} = locationsWithVaccine[location];
-          const capitalizedCity = capitalizeFirstLetter(city);
+    for (location in locationsWithVaccine) {
+      if (locationsWithVaccine.hasOwnProperty(location)) {
+        const {openTimeslots, openAppointmentSlots, city, url, street, name, manufacturers} = locationsWithVaccine[location];
+        const capatilizedCity = capitalizeSentance(city);
+        const urlFriendlyAddress = `${street.split(' ').join('+')}+${city.split(' ').join('+')}`;
+        const lastFound = lastRunSlotCount.find((locale) => locale.name === name);
+
+        if (openAppointmentSlots >= (lastFound.openAppointmentSlots + slotThreshold)) {
           slackFields.push({
             type: 'mrkdwn',
-            text: `${location}:  *${openTimeslots}* \n${capitalizedCity}`,
+            text: `<${url || hebURL}|${location}>\n<https://google.com/maps/?q=${urlFriendlyAddress}|${capatilizedCity}>\n*${openTimeslots}* ${openTimeslots <= 1 ? 'slot' : 'slots'}, *${openAppointmentSlots}* spots\n${manufacturers}\n---\n`,
           });
         }
       }
-
-      if (slackFields.length > 10) {
-        slackFields.length = 10; // Slack limits the number of fields to 10
-      }
-
-      if (slackFields.length > 0) {
-        const slackMessage = renderSlackMessage(scheduleURL, slackFields);
-        await webhook.send(slackMessage);
-      }
     }
+
+    if (slackFields.length > 10) {
+      slackFields.length = 10; // Slack limits the number of fields to 10
+    }
+
+    if (slackFields.length > 0) {
+      const slackMessage = renderSlackMessage(scheduleURL, slackFields);
+      await webhook.send(slackMessage);
+    }
+
+    lastRunSlotCount = vaccineLocations['locations'];
   } catch (e) {
     console.error(e);
   }
