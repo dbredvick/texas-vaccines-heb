@@ -4,14 +4,9 @@ const cron = require('node-cron');
 const fetch = require('node-fetch');
 const {setIntervalAsync} = require('set-interval-async/dynamic');
 const checkHeb = require('./crawlers/heb');
-const checkAlamodome = require('./crawlers/alamodome');
-const checkBellCounty = require('./crawlers/bell-county');
-const checkUniversity = require('./crawlers/university');
-const checkFallsHospital = require('./crawlers/falls-hospital');
-const checkWalmart = require('./crawlers/walmart');
-const checkWalgreens = require('./crawlers/walgreens');
 
-const cronJobInterval = '*/1 * * * *';
+
+const cronJobInterval = '0/1 * * * * *';
 
 app = express();
 
@@ -24,15 +19,15 @@ app.get('/alive', function(req, res) {
 cron.schedule(cronJobInterval, async () => {
   try {
     const keep = await fetch(keepaliveURL);
-    const alive = await keep.text();
-    console.log(alive);
+    console.log('running');
+    checkHeb.clearUrls();
 
-    await checkBellCounty();
-    await checkAlamodome();
-    await checkUniversity();
-    await checkWalmart();
-    await checkWalgreens();
-    await checkFallsHospital();
+    // await checkBellCounty();
+    // await checkAlamodome();
+    // await checkUniversity();
+    // await checkWalmart();
+    // await checkWalgreens();
+    // await checkFallsHospital();
   } catch (error) {
     console.error(error);
   }
@@ -41,9 +36,9 @@ cron.schedule(cronJobInterval, async () => {
 try {
   setIntervalAsync(
       async () => {
-        await checkHeb();
+        await checkHeb.checkHeb();
       },
-      1000 * 5,
+      1000 * 1,
   );
 } catch (e) {
   console.error(e);

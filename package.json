@@ -19,6 +19,7 @@
     "jsonpath": "^1.1.0",
     "node-cron": "^2.0.3",
     "node-fetch": "^2.6.1",
+    "open": "^8.0.4",
     "set-interval-async": "1.0.34"
   },
   "devDependencies": {

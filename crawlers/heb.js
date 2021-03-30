@@ -1,15 +1,48 @@
 require('dotenv').config();
 const fetch = require('node-fetch');
-const {IncomingWebhook} = require('@slack/webhook');
 const renderSlackMessage = require('../utils/renderSlackMessage');
 const capitalizeSentance = require('../utils/capitalizeSentance');
 const hebURL = 'https://heb-ecom-covid-vaccine.hebdigital-prd.com/vaccine_locations.json';
 const scheduleURL = 'https://vaccine.heb.com/scheduler';
-
-const webhookURL = process.env.HEB_WEBHOOK_URL;
-const webhook = new IncomingWebhook(webhookURL);
+const open = require('open');
 
 let lastRunSlotCount = [];
+const openedUrls = [];
+
+const clearUrls = () => {
+  console.log('clearing opened urls');
+  while (openedUrls.length) {
+    openedUrls.pop();
+  }
+};
+
+const distance = (lat1, lon1, lat2, lon2, unit) => {
+  if (lat1 == lat2 && lon1 == lon2) {
+    return 0;
+  } else {
+    const radlat1 = (Math.PI * lat1) / 180;
+    const radlat2 = (Math.PI * lat2) / 180;
+    const theta = lon1 - lon2;
+    const radtheta = (Math.PI * theta) / 180;
+    let dist =
+      Math.sin(radlat1) * Math.sin(radlat2) +
+      Math.cos(radlat1) * Math.cos(radlat2) * Math.cos(radtheta);
+    if (dist > 1) {
+      dist = 1;
+    }
+    dist = Math.acos(dist);
+    dist = (dist * 180) / Math.PI;
+    dist = dist * 60 * 1.1515;
+    if (unit == 'K') {
+      dist = dist * 1.609344;
+    }
+    if (unit == 'N') {
+      dist = dist * 0.8684;
+    }
+    return dist;
+  }
+};
+
 
 const excludedCities = [
   'odessa',
@@ -23,13 +56,12 @@ const excludedCities = [
   'port arthur',
 ];
 
-const slotThreshold = 4;
+const slotThreshold = 1;
 
 const extractSlotDetails = (slotDetails) => slotDetails.map((deets) => deets.manufacturer).join(', ');
 
 const checkHeb = async () => {
   try {
-    console.log('Checking HEB for vaccines...');
     const response = await fetch(hebURL);
     const vaccineLocations = await response.json();
 
@@ -41,12 +73,12 @@ const checkHeb = async () => {
 
     for (location in vaccineLocations.locations) {
       if (vaccineLocations.locations.hasOwnProperty(location)) {
-        const {name, openTimeslots, openAppointmentSlots, city, street, url, slotDetails} = vaccineLocations.locations[location];
+        const {name, openTimeslots, openAppointmentSlots, city, street, url, slotDetails, latitude, longitude} = vaccineLocations.locations[location];
         const manufacturers = extractSlotDetails(slotDetails);
 
 
         if (openAppointmentSlots >= slotThreshold && !excludedCities.includes(city.toLowerCase())) {
-          locationsWithVaccine[name] = {name, openTimeslots, openAppointmentSlots, city, url, street, manufacturers};
+          locationsWithVaccine[name] = {name, openTimeslots, openAppointmentSlots, city, url, street, manufacturers, latitude, longitude};
         }
       }
     }
@@ -55,32 +87,30 @@ const checkHeb = async () => {
       return;
     }
 
-    const slackFields = [];
+    let slackFields = [];
 
     for (location in locationsWithVaccine) {
       if (locationsWithVaccine.hasOwnProperty(location)) {
-        const {openTimeslots, openAppointmentSlots, city, url, street, name, manufacturers} = locationsWithVaccine[location];
-        const capatilizedCity = capitalizeSentance(city);
-        const urlFriendlyAddress = `${street.split(' ').join('+')}+${city.split(' ').join('+')}`;
-        const lastFound = lastRunSlotCount.find((locale) => locale.name === name);
-
-        if (openAppointmentSlots >= (lastFound.openAppointmentSlots + slotThreshold)) {
-          slackFields.push({
-            type: 'mrkdwn',
-            text: `<${url || hebURL}|${location}>\n<https://google.com/maps/?q=${urlFriendlyAddress}|${capatilizedCity}>\n*${openTimeslots}* ${openTimeslots <= 1 ? 'slot' : 'slots'}, *${openAppointmentSlots}* spots\n${manufacturers}\n---\n`,
-          });
+        const {city, url, latitude, longitude} = locationsWithVaccine[location];
+        console.log('city with vax', locationsWithVaccine[location].city);
+        if ( distance(parseFloat(latitude), parseFloat(longitude), 30.1492806, -97.7154811, 'N') <= 45 ) {
+          console.log('found one!');
+          slackFields.push(url || hebURL);
         }
       }
     }
+    const unique = new Set(slackFields);
 
-    if (slackFields.length > 10) {
-      slackFields.length = 10; // Slack limits the number of fields to 10
-    }
+    [...unique].map((link) => {
+      if (!openedUrls.includes(link)) {
+        open(link);
+        console.log('opening your tab');
+        slackFields = [];
+        openedUrls.push(link);
+      }
+    });
 
-    if (slackFields.length > 0) {
-      const slackMessage = renderSlackMessage(scheduleURL, slackFields);
-      await webhook.send(slackMessage);
-    }
+    slackFields = [];
 
     lastRunSlotCount = vaccineLocations['locations'];
   } catch (e) {
@@ -88,4 +118,4 @@ const checkHeb = async () => {
   }
 };
 
-module.exports = checkHeb;
+module.exports = {checkHeb, clearUrls};
